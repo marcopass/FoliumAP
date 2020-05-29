@@ -2,13 +2,17 @@ package com.example.foliumap;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.net.wifi.WifiConfiguration;
 import android.net.wifi.WifiManager;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.android.volley.DefaultRetryPolicy;
@@ -26,7 +30,11 @@ import java.util.Map;
 
 public class MainActivity extends AppCompatActivity {
 
+    String SSID = "FoliumAccessPoint";
+    String PASSWORD = "g5i7df0j";
+
     Button testBT;
+    TextView testTV;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -34,49 +42,25 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         testBT = findViewById(R.id.test_button);
+        testTV = findViewById(R.id.test_text);
 
-        String ssid = "FoliumAccessPoint";
-        String password = "g5i7df0j";
-
-        //String ssid = "Koleci";
-        //String password = "Adry'1997";
-
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
-            // WIFI HANDLING FOR VERSIONS <10 (Q), API 29
-            // my target is version 6.0 (Marshmellow), API 23
-            WifiConfiguration conf = new WifiConfiguration();
-            conf.SSID = "\"" + ssid + "\"";
-            conf.preSharedKey = "\""+ password +"\"";
-
-            conf.allowedKeyManagement.set(WifiConfiguration.KeyMgmt.NONE);
-
-            WifiManager wifiManager = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
-            wifiManager.addNetwork(conf);
-
-            if (!wifiManager.isWifiEnabled()) {
-                wifiManager.setWifiEnabled(true);
+        Thread thread = new Thread() {
+            @Override
+            public void run() {
+                try {
+                    while (!connectedToESP()) {
+                        if (!connectedToESP()) {
+                            connectToESP();
+                        }
+                        Thread.sleep(5000);
+                    }
+                } catch (Exception e) {}
             }
+        };
 
-            while (!wifiManager.isWifiEnabled()) {} // wait until wifi is on
+        thread.start();
 
-            List<WifiConfiguration> list = wifiManager.getConfiguredNetworks();
-            for( WifiConfiguration i : list ) {
-                if(i.SSID != null && i.SSID.equals("\"" + ssid + "\"")) {
-                    wifiManager.disconnect();
-                    wifiManager.enableNetwork(i.networkId, true);
-                    wifiManager.reconnect();
-
-                    Toast.makeText(this, "Connected to ESP!", Toast.LENGTH_SHORT).show();
-
-                    break;
-                } else {
-                    wifiManager.disableNetwork(i.networkId);
-                }
-            }
-        } else {
-            // WIFI HANDLING FOR VERSIONS >=10 (Q), API 29
-        }
-
+        sendTestRequest();
 
         testBT.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -87,6 +71,60 @@ public class MainActivity extends AppCompatActivity {
 
 
 
+
+
+
+
+
+    }
+
+    private void connectToESP() {
+
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+            // WIFI HANDLING FOR VERSIONS <10 (Q), API 29 ----------------------------------------------------------------------------------------------------------
+            // my target is version 6.0 (Marshmellow), API 23
+            WifiConfiguration conf = new WifiConfiguration();
+            conf.SSID = "\"" + SSID + "\"";
+            conf.preSharedKey = "\""+ PASSWORD +"\"";
+
+            conf.allowedKeyManagement.set(WifiConfiguration.KeyMgmt.NONE);
+
+            WifiManager wifiManager = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+            wifiManager.addNetwork(conf);
+
+            if (wifiManager.getWifiState() == WifiManager.WIFI_STATE_DISABLED) {
+                wifiManager.setWifiEnabled(true);
+            }
+
+            while (wifiManager.getWifiState() != WifiManager.WIFI_STATE_ENABLED) {}
+
+            List<WifiConfiguration> list = wifiManager.getConfiguredNetworks();
+            for( WifiConfiguration i : list ) {
+                wifiManager.disconnect();
+                if(i.SSID != null && i.SSID.equals("\"" + SSID + "\"")) {
+                    wifiManager.enableNetwork(i.networkId, true);
+                    break;
+                }
+            }
+
+        } else {
+            // WIFI HANDLING FOR VERSIONS >=10 (Q), API 29 --------------------------------------------------------------------------------------------------------------
+            // No Code => Manual Connection to ESP Access Point
+        }
+    }
+
+    private boolean connectedToESP() {
+        WifiManager wifiManager = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+
+        boolean connected = false;
+
+        if (wifiManager.getWifiState() == WifiManager.WIFI_STATE_ENABLED) {
+            if (wifiManager.getConnectionInfo().getSSID().equals("\"" + SSID + "\"")) {
+                connected = true;
+            }
+        }
+
+        return connected;
     }
 
     private void sendTestRequest() {
