@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <dimen name="textSizeMedium">20sp</dimen>
+
+    <dimen name="layoutCornerRadius">10dp</dimen>
+    <dimen name="mainPadding">5dp</dimen>
+
+
+    <dimen name="pickerHeight">120dp</dimen>
+
+</resources>

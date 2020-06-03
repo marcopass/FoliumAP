@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:background="@drawable/rounded_background"
+    android:layout_marginBottom="@dimen/mainPadding">
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:padding="@dimen/mainPadding"
+        android:layout_marginLeft="20dp">
+        <NumberPicker
+            android:id="@+id/picker_hour"
+            android:layout_width="wrap_content"
+            android:layout_height="@dimen/pickerHeight"
+            android:theme="@style/NumberPickerText"/>
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text=":"
+            android:theme="@style/NumberPickerText"/>
+        <NumberPicker
+            android:id="@+id/picker_minute"
+            android:layout_width="wrap_content"
+            android:layout_height="@dimen/pickerHeight"
+            android:theme="@style/NumberPickerText"/>
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="-----"
+            android:visibility="invisible"
+            android:theme="@style/NumberPickerText"/>
+        <NumberPicker
+            android:id="@+id/picker_duration"
+            android:layout_width="wrap_content"
+            android:layout_height="@dimen/pickerHeight"
+            android:theme="@style/NumberPickerText"/>
+    </LinearLayout>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="right"
+        android:layout_gravity="bottom"
+        android:padding="@dimen/mainPadding">
+        <Button
+            android:id="@+id/time_list_delete_button"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="@drawable/ic_baseline_remove_circle_24"
+            android:backgroundTint="@color/colorAccent"/>
+    </LinearLayout>
+
+
+</LinearLayout>
