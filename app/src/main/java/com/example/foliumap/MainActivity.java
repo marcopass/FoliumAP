@@ -6,12 +6,15 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.graphics.Color;
+import android.graphics.Typeface;
 import android.net.wifi.WifiConfiguration;
 import android.net.wifi.WifiManager;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
+import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -34,6 +37,8 @@ import com.android.volley.VolleyError;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 
+import org.w3c.dom.Text;
+
 import java.lang.reflect.Method;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -42,6 +47,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TimeZone;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -67,6 +73,8 @@ public class MainActivity extends AppCompatActivity {
     int DEFAULT_NEW_MINUTE = 0;
     int DEFAULT_NEW_DURATION = 5;
 
+    int MAX_MSG = 10;
+
     // WIDGETS
     // Top Section
     TextView lastWaterTV, nextWaterTV;
@@ -82,9 +90,14 @@ public class MainActivity extends AppCompatActivity {
     LinearLayout timeListPlusLL;
     Button timeListPlusBT;
     // Middle Section - Message Log
+    LinearLayout messageLogLLExt;
+    ScrollView messageLogSV;
     LinearLayout messageLogLL;
-
+    TextView[] messageLogTV = new TextView[MAX_MSG];
     // Bottom Section
+    Button submitChangesBT;
+    Button waterNowBT;
+    Button testBT;
 
     // Others
 
@@ -93,7 +106,7 @@ public class MainActivity extends AppCompatActivity {
     int[] minuteArray = new int[MAX_TIMES];
     int[] durationArray = new int[MAX_TIMES];
     int numMemTimes = 5;
-    String lastWaterTimestamp = "";
+    String lastWaterTimestamp = "2020-06-06_12:00:00";
 
 
 
@@ -111,14 +124,22 @@ public class MainActivity extends AppCompatActivity {
         timeListPlusLL = findViewById(R.id.time_list_plus_layout);
         timeListPlusBT = findViewById(R.id.time_list_plus_button);
         // Middle Section - Message Log
+        messageLogLLExt = findViewById(R.id.message_log_layout_ext);
+        messageLogSV = findViewById(R.id.message_log_scroll);
         messageLogLL = findViewById(R.id.message_log_layout);
         // Bottom Section
+        submitChangesBT = findViewById(R.id.submit_changes_button);
+        waterNowBT = findViewById(R.id.water_now_button);
+        testBT = findViewById(R.id.test_button);
 
         // Others
         SharedPreferences preferences =getSharedPreferences("FoliumAP_Data", 0);
         String rawTimeList = preferences.getString("timeList", "3,6-0-10,12-30-10,18-0-15,");
         String lastWaterTimestamp = preferences.getString("lastWaterTimestamp", "");
         numMemTimes = Integer.parseInt(rawTimeList.split(",")[0]);
+
+        updateLastWater();
+        updateNextWater();
 
         for (int i = 0; i < numMemTimes; i++) {
             String pckg = rawTimeList.split(",")[i+1];
@@ -150,6 +171,8 @@ public class MainActivity extends AppCompatActivity {
 
                     // update view
                     updateTimeListView();
+
+                    logMessage("numMemTimes: " + numMemTimes, "INFO");
                 }
             });
         }
@@ -176,6 +199,8 @@ public class MainActivity extends AppCompatActivity {
                         timeListSV.fullScroll(View.FOCUS_DOWN);
                     }
                 });
+
+                logMessage("numMemTimes: " + numMemTimes, "INFO");
             }
         });
 
@@ -190,9 +215,28 @@ public class MainActivity extends AppCompatActivity {
             getTimeList();
         }
 
+        submitChangesBT.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                setTimeList();
+            }
+        });
 
+        waterNowBT.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+               waterNow();
+            }
+        });
 
-
+        testBT.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                getDateTime();
+                getLastWater();
+                getTimeList();
+            }
+        });
 
 
     }
@@ -265,6 +309,40 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+
+    private void logMessage(String msg, String type) {
+        TextView newMsgTV = new TextView(getApplicationContext());
+
+        newMsgTV.setText("New Message");
+        newMsgTV.setTextSize(TypedValue.COMPLEX_UNIT_PX, getResources().getDimension(R.dimen.textSizeSmall));
+        switch (type) {
+            case "INFO":
+                newMsgTV.setText("[INFO] " + msg);
+                newMsgTV.setTextColor(getResources().getColor(R.color.colorTextLog));
+                break;
+            case "WARN":
+                newMsgTV.setText("[WARN] " + msg);
+                newMsgTV.setTextColor(getResources().getColor(R.color.colorAccent));
+                //newMsgTV.setTypeface(Typeface.DEFAULT_BOLD);
+                break;
+            case "ERROR":
+                newMsgTV.setText("[ERROR] " + msg);
+                newMsgTV.setTextColor(getResources().getColor(R.color.colorAccent));
+                newMsgTV.setTypeface(Typeface.DEFAULT_BOLD);
+                break;
+        }
+
+        messageLogLL.addView(newMsgTV);
+        messageLogSV.post(new Runnable() {
+            @Override
+            public void run() {
+                messageLogSV.fullScroll(View.FOCUS_DOWN);
+            }
+        });
+    }
+
+
+
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         MenuInflater inflater =getMenuInflater();
@@ -276,12 +354,14 @@ public class MainActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         switch (item.getItemId()) {
             case R.id.menu_item_show_log:
-                messageLogLL.setVisibility(messageLogLL.getVisibility() == View.VISIBLE ? View.GONE : View.VISIBLE);
+                messageLogLLExt.setVisibility(messageLogLLExt.getVisibility() == View.VISIBLE ? View.GONE : View.VISIBLE);
                 break;
         }
 
         return super.onOptionsItemSelected(item);
     }
+
+
 
     private void connectToESP() {
 
@@ -341,14 +421,14 @@ public class MainActivity extends AppCompatActivity {
                 new Response.Listener<String>() {
                     @Override
                     public void onResponse(String response) {
-                        Toast.makeText(MainActivity.this, response, Toast.LENGTH_LONG).show();
+                        logMessage("getDateTime: " + response, "INFO");
                         // expected response format: yyyy-MM-dd HH:mm:ss
                         // check if dateTime is reasonable, if not RTC battery is empty
 
                         Calendar currentTime = Calendar.getInstance();
                         Calendar receivedTime = Calendar.getInstance();
-                        receivedTime.set(Calendar.YEAR, Integer.parseInt(response.substring(2,4)));
-                        receivedTime.set(Calendar.MONTH, Integer.parseInt(response.substring(5,7)));
+                        receivedTime.set(Calendar.YEAR, Integer.parseInt(response.substring(0,4)));
+                        receivedTime.set(Calendar.MONTH, Integer.parseInt(response.substring(5,7)) - 1);
                         receivedTime.set(Calendar.DATE, Integer.parseInt(response.substring(8,10)));
                         receivedTime.set(Calendar.HOUR, Integer.parseInt(response.substring(11,13)));
                         receivedTime.set(Calendar.MINUTE, Integer.parseInt(response.substring(14,16)));
@@ -356,8 +436,17 @@ public class MainActivity extends AppCompatActivity {
 
                         long diffInMillis = Math.abs(currentTime.getTimeInMillis() - receivedTime.getTimeInMillis());
 
+                        logMessage("Current date time: " + DATE_TIME_FORMAT.format(currentTime.getTime()), "INFO");
+                        //logMessage("curent in millis: " + currentTime.getTimeInMillis(), "INFO");
+                        //logMessage("Received date time: " + DATE_TIME_FORMAT.format(receivedTime.getTime()), "INFO");
+                        //logMessage("received in millis: " + receivedTime.getTimeInMillis(), "INFO");
+                        logMessage("Diff in millis: " + diffInMillis, "INFO");
+
                         if (diffInMillis > 1000 * 60 * 5) {
                             // Send error message to user -> RTC battery probably empty
+                            logMessage("A wrong date time was detected! Check RTC battery level!", "WARN");
+
+                            messageLogLLExt.setVisibility(View.VISIBLE);
                         }
 
                         // send setDateTime() to automatically correct RTC time.
@@ -367,7 +456,8 @@ public class MainActivity extends AppCompatActivity {
                 new Response.ErrorListener() {
                     @Override
                     public void onErrorResponse(VolleyError error) {
-                        Toast.makeText(MainActivity.this, error.toString(), Toast.LENGTH_LONG).show();
+                        logMessage("getDateTime: " + error.toString(), "ERROR");
+                        messageLogLLExt.setVisibility(View.VISIBLE);
                     }
                 }
         ) {
@@ -391,7 +481,7 @@ public class MainActivity extends AppCompatActivity {
                 new Response.Listener<String>() {
                     @Override
                     public void onResponse(String response) {
-                        Toast.makeText(MainActivity.this, response, Toast.LENGTH_LONG).show();
+                        logMessage("getLastWater: " + response, "INFO");
 
                         lastWaterTimestamp = response;
 
@@ -400,7 +490,8 @@ public class MainActivity extends AppCompatActivity {
                 new Response.ErrorListener() {
                     @Override
                     public void onErrorResponse(VolleyError error) {
-                        Toast.makeText(MainActivity.this, error.toString(), Toast.LENGTH_LONG).show();
+                        logMessage("getLastWater: " + error.toString(), "ERROR");
+                        messageLogLLExt.setVisibility(View.VISIBLE);
                     }
                 }
         ) {
@@ -424,7 +515,7 @@ public class MainActivity extends AppCompatActivity {
                 new Response.Listener<String>() {
                     @Override
                     public void onResponse(String response) {
-                        Toast.makeText(MainActivity.this, response, Toast.LENGTH_LONG).show();
+                        logMessage("getTimeList: " + response, "INFO");
 
                         numMemTimes = Integer.parseInt(response.split(",")[0]);
                         for (int i = 0; i < numMemTimes; i++) {
@@ -432,6 +523,7 @@ public class MainActivity extends AppCompatActivity {
                             hourArray[i] = Integer.parseInt(pckg.split("-")[0]);
                             minuteArray[i] = Integer.parseInt(pckg.split("-")[1]);
                             durationArray[i] = Integer.parseInt(pckg.split("-")[2]);
+                            updateTimeListView();
                         }
 
                     }
@@ -439,7 +531,8 @@ public class MainActivity extends AppCompatActivity {
                 new Response.ErrorListener() {
                     @Override
                     public void onErrorResponse(VolleyError error) {
-                        Toast.makeText(MainActivity.this, error.toString(), Toast.LENGTH_LONG).show();
+                        logMessage("getTimeList: " + error.toString(), "ERROR");
+                        messageLogLLExt.setVisibility(View.VISIBLE);
                     }
                 }
         ) {
@@ -457,8 +550,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void setDateTime() {
-        // NOTE: Do not use blanks in date format to avoid problems in http request!
-
         Calendar calendar = Calendar.getInstance();
 
         String requestURL = URL + "?action=" + SET_DATE_TIME + "&datetime=" + DATE_TIME_FORMAT.format(calendar.getTime());
@@ -468,13 +559,14 @@ public class MainActivity extends AppCompatActivity {
                 new Response.Listener<String>() {
                     @Override
                     public void onResponse(String response) {
-                        Toast.makeText(MainActivity.this, response, Toast.LENGTH_LONG).show();
+                        logMessage("setDateTime: " + response, "INFO");
                     }
                 },
                 new Response.ErrorListener() {
                     @Override
                     public void onErrorResponse(VolleyError error) {
-                        Toast.makeText(MainActivity.this, error.toString(), Toast.LENGTH_LONG).show();
+                        logMessage("setDateTime: " + error.toString(), "ERROR");
+                        messageLogLLExt.setVisibility(View.VISIBLE);
                     }
                 }
         ) {
@@ -494,6 +586,10 @@ public class MainActivity extends AppCompatActivity {
     private void setTimeList() {
         String timeListString = numMemTimes + ",";
         for (int i = 0; i < numMemTimes; i++) {
+            hourArray[i] = hourNP[i].getValue();
+            minuteArray[i] = minuteNP[i].getValue();
+            durationArray[i] = durationNP[i].getValue();
+
             timeListString += hourArray[i] + "-" + minuteArray[i] + "-" + durationArray[i] + ",";
         }
 
@@ -503,13 +599,14 @@ public class MainActivity extends AppCompatActivity {
                 new Response.Listener<String>() {
                     @Override
                     public void onResponse(String response) {
-                        Toast.makeText(MainActivity.this, response, Toast.LENGTH_LONG).show();
+                        logMessage("setTimeList: " + response, "INFO");
                     }
                 },
                 new Response.ErrorListener() {
                     @Override
                     public void onErrorResponse(VolleyError error) {
-                        Toast.makeText(MainActivity.this, error.toString(), Toast.LENGTH_LONG).show();
+                        logMessage("setTimeList: " + error.toString(), "ERROR");
+                        messageLogLLExt.setVisibility(View.VISIBLE);
                     }
                 }
         ) {
@@ -527,20 +624,22 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void waterNow() {
-        String requestURL = URL + "?action=" + WATER_NOW;
+        // REMEMBER TO SET DURATION (in seconds) !!!
+        String requestURL = URL + "?action=" + WATER_NOW + "&duration=2";
 
         StringRequest request = new StringRequest(Request.Method.GET, requestURL,
                 new Response.Listener<String>() {
                     @Override
                     public void onResponse(String response) {
-                        Toast.makeText(MainActivity.this, response, Toast.LENGTH_LONG).show();
+                        logMessage("waterNow: " + response, "INFO");
                         // set progress dialog or bar, then send getLastWater()
                     }
                 },
                 new Response.ErrorListener() {
                     @Override
                     public void onErrorResponse(VolleyError error) {
-                        Toast.makeText(MainActivity.this, error.toString(), Toast.LENGTH_LONG).show();
+                        logMessage("waterNow: " + error.toString(), "ERROR");
+                        messageLogLLExt.setVisibility(View.VISIBLE);
                     }
                 }
         ) {
@@ -555,6 +654,47 @@ public class MainActivity extends AppCompatActivity {
         request.setRetryPolicy(retryPolicy);
         RequestQueue queue = Volley.newRequestQueue(MainActivity.this);
         queue.add(request);
+    }
+
+
+    private void updateLastWater() {
+        Calendar currentTime = Calendar.getInstance();
+        Calendar lastWaterTime = Calendar.getInstance();
+        lastWaterTime.set(Calendar.YEAR, Integer.parseInt(lastWaterTimestamp.substring(0,4)));
+        lastWaterTime.set(Calendar.MONTH, Integer.parseInt(lastWaterTimestamp.substring(5,7)) - 1);
+        lastWaterTime.set(Calendar.DATE, Integer.parseInt(lastWaterTimestamp.substring(8,10)));
+        lastWaterTime.set(Calendar.HOUR, Integer.parseInt(lastWaterTimestamp.substring(11,13)));
+        lastWaterTime.set(Calendar.MINUTE, Integer.parseInt(lastWaterTimestamp.substring(14,16)));
+        lastWaterTime.set(Calendar.SECOND, Integer.parseInt(lastWaterTimestamp.substring(17,19)));
+
+        String date = "";
+        int diffDay = currentTime.get(Calendar.DATE) - lastWaterTime.get(Calendar.DATE);
+        switch (diffDay) {
+            case -1:
+                date = "tomorrow";
+                logMessage("Something wrong with lastWater!", "WARN");
+                break;
+            case 0:
+                date = "today";
+                break;
+            case 1:
+                date = "yesterday";
+                break;
+            default:
+                SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd");
+                date = dateFormat.format(lastWaterTime.getTime());
+        }
+
+        SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm");
+        String time = timeFormat.format(lastWaterTime.getTime());
+
+        
+
+        lastWaterTV.setText(date + ", " + time);
+    }
+
+    private void updateNextWater() {
+
     }
 
 }

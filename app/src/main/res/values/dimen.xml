@@ -2,6 +2,7 @@
 <resources>
 
     <dimen name="textSizeMedium">20sp</dimen>
+    <dimen name="textSizeSmall">15sp</dimen>
 
     <dimen name="layoutCornerRadius">10dp</dimen>
     <dimen name="mainPadding">5dp</dimen>

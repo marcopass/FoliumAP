@@ -66,13 +66,16 @@
         android:layout_height="0dp"
         app:layout_constraintTop_toBottomOf="@id/last_next_time_layout"
         app:layout_constraintBottom_toTopOf="@id/bottom_controls_layout"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        android:layout_marginTop="@dimen/mainPadding">
         <LinearLayout
             android:id="@+id/time_list_layout_ext"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:orientation="vertical"
-            android:layout_weight="1">
+            android:layout_weight="1"
+            android:paddingLeft="@dimen/mainPadding"
+            android:paddingRight="@dimen/mainPadding">
             <ScrollView
                 android:id="@+id/time_list_scroll"
                 android:layout_width="match_parent"
@@ -81,8 +84,7 @@
                     android:id="@+id/time_list_layout"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
-                    android:orientation="vertical"
-                    android:padding="@dimen/mainPadding">
+                    android:orientation="vertical">
 
                     <include
                         android:id="@+id/time_list_layout_0"
@@ -144,26 +146,38 @@
         </LinearLayout>
 
         <LinearLayout
-            android:id="@+id/message_log_layout"
+            android:id="@+id/message_log_layout_ext"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             app:layout_constraintTop_toBottomOf="@id/time_list_layout"
             android:orientation="vertical"
-            android:layout_weight="3"
+            android:layout_weight="2"
             android:background="@drawable/rounded_background"
-            android:padding="@dimen/mainPadding"
+            android:paddingLeft="@dimen/mainPadding"
+            android:paddingTop="@dimen/mainPadding"
+            android:paddingBottom="@dimen/mainPadding"
             android:layout_marginBottom="0dp"
             android:layout_marginTop="@dimen/mainPadding"
             android:layout_marginLeft="@dimen/mainPadding"
             android:layout_marginRight="@dimen/mainPadding">
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Message Log:"
+                android:textColor="@color/colorTextLog"
+                android:textSize="@dimen/textSizeSmall"
+                android:textStyle="bold"/>
             <ScrollView
                 android:id="@+id/message_log_scroll"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent">
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="MESSAGE_LOG"/>
+                <LinearLayout
+                    android:id="@+id/message_log_layout"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:orientation="vertical">
+
+                </LinearLayout>
             </ScrollView>
         </LinearLayout>
     </LinearLayout>
@@ -190,12 +204,23 @@
             android:id="@+id/water_now_button"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:layout_weight="2"
+            android:layout_weight="1"
             android:text="WATER NOW"
             android:textSize="20sp"
             android:textStyle="bold"
             android:background="@drawable/rounded_background"
             android:backgroundTint="@color/colorAccent"/>
+        <Button
+            android:id="@+id/test_button"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:text="TEST"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:background="@drawable/rounded_background"
+            android:backgroundTint="@color/colorTextLog"
+            android:layout_marginLeft="@dimen/mainPadding"/>
     </LinearLayout>
 
 
