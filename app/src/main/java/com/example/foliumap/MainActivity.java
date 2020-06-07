@@ -5,6 +5,8 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.graphics.Typeface;
@@ -100,6 +102,7 @@ public class MainActivity extends AppCompatActivity {
     Button testBT;
 
     // Others
+    BroadcastReceiver broadcastReceiver;
 
     // VARIABLES
     int[] hourArray = new int[MAX_TIMES];
@@ -138,8 +141,6 @@ public class MainActivity extends AppCompatActivity {
         String lastWaterTimestamp = preferences.getString("lastWaterTimestamp", "");
         numMemTimes = Integer.parseInt(rawTimeList.split(",")[0]);
 
-        updateLastWater();
-        updateNextWater();
 
         for (int i = 0; i < numMemTimes; i++) {
             String pckg = rawTimeList.split(",")[i+1];
@@ -241,6 +242,50 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        MenuInflater inflater =getMenuInflater();
+        inflater.inflate(R.menu.menu, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.menu_item_show_log:
+                messageLogLLExt.setVisibility(messageLogLLExt.getVisibility() == View.VISIBLE ? View.GONE : View.VISIBLE);
+                break;
+        }
+
+        return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+
+        broadcastReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                if (intent.getAction().compareTo(Intent.ACTION_TIME_TICK) == 0) {
+                    updateLastWater();
+                    updateNextWater();
+                }
+            }
+        };
+
+        registerReceiver(broadcastReceiver, new IntentFilter(Intent.ACTION_TIME_TICK));
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        if (broadcastReceiver != null) {
+            unregisterReceiver(broadcastReceiver);
+        }
+    }
+
+
     private void updateTimeListView() {
         for (int i = 0; i < MAX_TIMES; i++) {
             if (i < numMemTimes) {
@@ -310,6 +355,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
+
     private void logMessage(String msg, String type) {
         TextView newMsgTV = new TextView(getApplicationContext());
 
@@ -339,26 +385,6 @@ public class MainActivity extends AppCompatActivity {
                 messageLogSV.fullScroll(View.FOCUS_DOWN);
             }
         });
-    }
-
-
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        MenuInflater inflater =getMenuInflater();
-        inflater.inflate(R.menu.menu, menu);
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
-        switch (item.getItemId()) {
-            case R.id.menu_item_show_log:
-                messageLogLLExt.setVisibility(messageLogLLExt.getVisibility() == View.VISIBLE ? View.GONE : View.VISIBLE);
-                break;
-        }
-
-        return super.onOptionsItemSelected(item);
     }
 
 
@@ -430,7 +456,7 @@ public class MainActivity extends AppCompatActivity {
                         receivedTime.set(Calendar.YEAR, Integer.parseInt(response.substring(0,4)));
                         receivedTime.set(Calendar.MONTH, Integer.parseInt(response.substring(5,7)) - 1);
                         receivedTime.set(Calendar.DATE, Integer.parseInt(response.substring(8,10)));
-                        receivedTime.set(Calendar.HOUR, Integer.parseInt(response.substring(11,13)));
+                        receivedTime.set(Calendar.HOUR_OF_DAY, Integer.parseInt(response.substring(11,13)));
                         receivedTime.set(Calendar.MINUTE, Integer.parseInt(response.substring(14,16)));
                         receivedTime.set(Calendar.SECOND, Integer.parseInt(response.substring(17,19)));
 
@@ -663,7 +689,7 @@ public class MainActivity extends AppCompatActivity {
         lastWaterTime.set(Calendar.YEAR, Integer.parseInt(lastWaterTimestamp.substring(0,4)));
         lastWaterTime.set(Calendar.MONTH, Integer.parseInt(lastWaterTimestamp.substring(5,7)) - 1);
         lastWaterTime.set(Calendar.DATE, Integer.parseInt(lastWaterTimestamp.substring(8,10)));
-        lastWaterTime.set(Calendar.HOUR, Integer.parseInt(lastWaterTimestamp.substring(11,13)));
+        lastWaterTime.set(Calendar.HOUR_OF_DAY, Integer.parseInt(lastWaterTimestamp.substring(11,13)));
         lastWaterTime.set(Calendar.MINUTE, Integer.parseInt(lastWaterTimestamp.substring(14,16)));
         lastWaterTime.set(Calendar.SECOND, Integer.parseInt(lastWaterTimestamp.substring(17,19)));
 
@@ -688,13 +714,76 @@ public class MainActivity extends AppCompatActivity {
         SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm");
         String time = timeFormat.format(lastWaterTime.getTime());
 
-        
+        int diffInSec = (int) (Math.abs(currentTime.getTimeInMillis() - lastWaterTime.getTimeInMillis())) / 1000;
+        //int sec = diffInSec % 60;
+        int min = (diffInSec / 60) % 60;
+        int hour = (diffInSec / 60 / 60) % 24;
+        int day = diffInSec / 60 / 60 / 24;
+        String timeAgo = day + "d" + String.format("%2d", hour) + "h" + String.format("%2d", min) + "m ago";
 
-        lastWaterTV.setText(date + ", " + time);
+        lastWaterTV.setText(date + ", " + time + "\n" + timeAgo);
     }
 
     private void updateNextWater() {
+        Calendar currentTime = Calendar.getInstance();
 
+        int candidatesDiff[] = new int[2*numMemTimes];
+        int diffInMillis = 100000000; // needs to be greater than 1000*3600*24 = 86400000
+        int diffDay = -1;
+        Calendar nextWaterTime = Calendar.getInstance();
+
+        for (int i = 0; i < 2*numMemTimes; i++) {
+            Calendar candidateTime = Calendar.getInstance();
+            candidateTime.set(Calendar.HOUR_OF_DAY, hourArray[i]);
+            candidateTime.set(Calendar.MINUTE, minuteArray[i]);
+            candidateTime.set(Calendar.SECOND, 0);
+
+            if (i < numMemTimes) {
+                candidatesDiff[i] = (int) (candidateTime.getTimeInMillis() - currentTime.getTimeInMillis());
+            } else {
+                candidateTime.set(Calendar.DATE, candidateTime.get(Calendar.DATE) + 1);
+                candidateTime.set(Calendar.HOUR_OF_DAY, hourArray[i]);
+                candidateTime.set(Calendar.MINUTE, minuteArray[i]);
+                candidatesDiff[i - numMemTimes] = (int) (candidateTime.getTimeInMillis() - currentTime.getTimeInMillis());
+            }
+
+            logMessage("candidateTime: " + DATE_TIME_FORMAT.format(candidateTime.getTime()), "WARN");
+
+            if (candidatesDiff[i] >= 0 && candidatesDiff[i] < diffInMillis) {
+                diffInMillis = candidatesDiff[i];
+                diffDay = i < numMemTimes ? 0 : -1;
+                nextWaterTime = candidateTime;
+            }
+        }
+
+        String date = "";
+        switch (diffDay) {
+            case -1:
+                date = "tomorrow";
+                break;
+            case 0:
+                date = "today";
+                break;
+            case 1:
+                date = "yesterday";
+                logMessage("Something wrong with lastWater!", "WARN");
+                break;
+            default:
+                SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd");
+                date = dateFormat.format(nextWaterTime.getTime());
+        }
+
+        SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm");
+        String time = timeFormat.format(nextWaterTime.getTime());
+
+        int diffInSec = (int) (Math.abs(currentTime.getTimeInMillis() - nextWaterTime.getTimeInMillis())) / 1000;
+        //int sec = diffInSec % 60;
+        int min = (diffInSec / 60) % 60;
+        int hour = (diffInSec / 60 / 60) % 24;
+        int day = diffInSec / 60 / 60 / 24;
+        String timeIn = "in " + day + "d" + String.format("%2d", hour) + "h" + String.format("%2d", min) + "m";
+
+        nextWaterTV.setText(date + ", " + time + "\n" + timeIn);
     }
 
 }
