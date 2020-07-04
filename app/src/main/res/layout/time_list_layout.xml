@@ -16,10 +16,23 @@
         android:padding="@dimen/mainPadding"
         android:layout_marginLeft="20dp">
         <NumberPicker
+            android:id="@+id/picker_day"
+            android:layout_width="wrap_content"
+            android:layout_height="@dimen/pickerHeight"
+            android:theme="@style/NumberPickerText"
+            android:descendantFocusability="blocksDescendants"/>
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="-"
+            android:visibility="invisible"
+            android:theme="@style/NumberPickerText"/>
+        <NumberPicker
             android:id="@+id/picker_hour"
             android:layout_width="wrap_content"
             android:layout_height="@dimen/pickerHeight"
-            android:theme="@style/NumberPickerText"/>
+            android:theme="@style/NumberPickerText"
+            android:descendantFocusability="blocksDescendants"/>
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -29,7 +42,8 @@
             android:id="@+id/picker_minute"
             android:layout_width="wrap_content"
             android:layout_height="@dimen/pickerHeight"
-            android:theme="@style/NumberPickerText"/>
+            android:theme="@style/NumberPickerText"
+            android:descendantFocusability="blocksDescendants"/>
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -40,7 +54,8 @@
             android:id="@+id/picker_duration"
             android:layout_width="wrap_content"
             android:layout_height="@dimen/pickerHeight"
-            android:theme="@style/NumberPickerText"/>
+            android:theme="@style/NumberPickerText"
+            android:descendantFocusability="blocksDescendants"/>
     </LinearLayout>
     <LinearLayout
         android:layout_width="match_parent"

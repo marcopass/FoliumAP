@@ -76,12 +76,14 @@ public class MainActivity extends AppCompatActivity {
     SimpleDateFormat DATE_TIME_FORMAT = new SimpleDateFormat("yyyy-MM-dd_HH:mm:ss");
 
     int MAX_TIMES = 8;
+    int MAX_MSG = 10;
+    int MAX_DURATION = 30;
 
+    int DEFAULT_NEW_DAY = 0;
     int DEFAULT_NEW_HOUR = 0;
     int DEFAULT_NEW_MINUTE = 0;
     int DEFAULT_NEW_DURATION = 5;
 
-    int MAX_MSG = 10;
 
     // WIDGETS
     // Top Section
@@ -92,6 +94,7 @@ public class MainActivity extends AppCompatActivity {
     View[] timeListLL = new LinearLayout[MAX_TIMES];
     LinearLayout[] leftLL = new LinearLayout[MAX_TIMES];
     LinearLayout[] rightLL = new LinearLayout[MAX_TIMES];
+    NumberPicker[] dayNP = new NumberPicker[MAX_TIMES];
     NumberPicker[] hourNP = new NumberPicker[MAX_TIMES];
     NumberPicker[] minuteNP = new NumberPicker[MAX_TIMES];
     NumberPicker[] durationNP = new NumberPicker[MAX_TIMES];
@@ -115,6 +118,7 @@ public class MainActivity extends AppCompatActivity {
     ProgressBar progressBar;
 
     // VARIABLES
+    int[] dayArray = new int[MAX_TIMES];
     int[] hourArray = new int[MAX_TIMES];
     int[] minuteArray = new int[MAX_TIMES];
     int[] durationArray = new int[MAX_TIMES];
@@ -156,15 +160,17 @@ public class MainActivity extends AppCompatActivity {
         // VARIABLES
         SharedPreferences preferences = getSharedPreferences("FoliumAP_Data", MODE_PRIVATE);
         rawTimeList = preferences.getString("timeList", "0,");
+        //rawTimeList = "1,0-6-30-5,";
         lastWaterTimestamp = preferences.getString("lastWaterTimestamp", "");
         numMemTimes = Integer.parseInt(rawTimeList.split(",")[0]);
 
         for (int i = 0; i < numMemTimes; i++) {
             String pckg = rawTimeList.split(",")[i+1];
 
-            hourArray[i] = Integer.parseInt(pckg.split("-")[0]);
-            minuteArray[i] = Integer.parseInt(pckg.split("-")[1]);
-            durationArray[i] = Integer.parseInt(pckg.split("-")[2]);
+            dayArray[i] = Integer.parseInt(pckg.split("-")[0]);
+            hourArray[i] = Integer.parseInt(pckg.split("-")[1]);
+            minuteArray[i] = Integer.parseInt(pckg.split("-")[2]);
+            durationArray[i] = Integer.parseInt(pckg.split("-")[3]);
         }
 
         updateTimeListView();
@@ -182,6 +188,7 @@ public class MainActivity extends AppCompatActivity {
                     // shift arrays
                     for (int j = I; j < MAX_TIMES; j++) {
                         if (j < MAX_TIMES - 1) {
+                            dayArray[j] = dayArray[j + 1];
                             hourArray[j] = hourArray[j + 1];
                             minuteArray[j] = minuteArray[j + 1];
                             durationArray[j] = durationArray[j + 1];
@@ -204,6 +211,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 // Add default values to arrays
+                dayArray[numMemTimes] = DEFAULT_NEW_DAY;
                 hourArray[numMemTimes] = DEFAULT_NEW_HOUR;
                 minuteArray[numMemTimes] = DEFAULT_NEW_MINUTE;
                 durationArray[numMemTimes] = DEFAULT_NEW_DURATION;
@@ -258,15 +266,12 @@ public class MainActivity extends AppCompatActivity {
                 final NumberPicker durationPopupNP = popupView.findViewById(R.id.picker_popup_duration);
                 Button waterNowPopupBT = popupView.findViewById(R.id.water_now_popup_button);
 
+                String[] durationPopupNPDispVal = new String[MAX_DURATION];
+                for (int j = 0; j < MAX_DURATION; j++) { durationPopupNPDispVal[j] = (j+1) + " min"; }
                 durationPopupNP.setMinValue(1);
-                durationPopupNP.setMaxValue(99);
+                durationPopupNP.setMaxValue(MAX_DURATION);
                 durationPopupNP.setWrapSelectorWheel(false);
-                durationPopupNP.setFormatter(new NumberPicker.Formatter() {
-                    @Override
-                    public String format(int i) {
-                        return i + " min";
-                    }
-                });
+                durationPopupNP.setDisplayedValues(durationPopupNPDispVal);
 
                 waterNowPopupBT.setOnClickListener(new View.OnClickListener() {
                     @Override
@@ -353,6 +358,7 @@ public class MainActivity extends AppCompatActivity {
         for (int i = 0; i < MAX_TIMES; i++) {
             if (i < numMemTimes) {
                 timeListLL[i].setVisibility(View.VISIBLE);
+                dayNP[i].setValue(dayArray[i]);
                 hourNP[i].setValue(hourArray[i]);
                 minuteNP[i].setValue(minuteArray[i]);
                 durationNP[i].setValue(durationArray[i]);
@@ -380,9 +386,14 @@ public class MainActivity extends AppCompatActivity {
 
         for (int i = 0; i < MAX_TIMES; i++) {
             // Pickers
+            dayNP[i] = timeListLL[i].findViewById(R.id.picker_day);
             hourNP[i] = timeListLL[i].findViewById(R.id.picker_hour);
             minuteNP[i] = timeListLL[i].findViewById(R.id.picker_minute);
             durationNP[i] = timeListLL[i].findViewById(R.id.picker_duration);
+
+            dayNP[i].setMinValue(0);
+            dayNP[i].setMaxValue(7);
+            dayNP[i].setDisplayedValues(new String[] {"7/7", "lun", "mar", "mer", "gio", "ven", "sab", "dom"});
 
             hourNP[i].setMinValue(0);
             hourNP[i].setMaxValue(23);
@@ -402,15 +413,12 @@ public class MainActivity extends AppCompatActivity {
                 }
             });
 
+            String[] durationNPDispVal = new String[MAX_DURATION];
+            for (int j = 0; j < MAX_DURATION; j++) { durationNPDispVal[j] = (j+1) + " min"; }
             durationNP[i].setMinValue(1);
-            durationNP[i].setMaxValue(99);
+            durationNP[i].setMaxValue(MAX_DURATION);
             durationNP[i].setWrapSelectorWheel(false);
-            durationNP[i].setFormatter(new NumberPicker.Formatter() {
-                @Override
-                public String format(int i) {
-                    return i + " min";
-                }
-            });
+            durationNP[i].setDisplayedValues(durationNPDispVal);
 
             // Buttons
             deleteBT[i] = timeListLL[i].findViewById(R.id.time_list_delete_button);
@@ -593,9 +601,10 @@ public class MainActivity extends AppCompatActivity {
                         numMemTimes = Integer.parseInt(response.split(",")[0]);
                         for (int i = 0; i < numMemTimes; i++) {
                             String pckg = response.split(",")[i+1];
-                            hourArray[i] = Integer.parseInt(pckg.split("-")[0]);
-                            minuteArray[i] = Integer.parseInt(pckg.split("-")[1]);
-                            durationArray[i] = Integer.parseInt(pckg.split("-")[2]);
+                            dayArray[i] = Integer.parseInt(pckg.split("-")[0]);
+                            hourArray[i] = Integer.parseInt(pckg.split("-")[1]);
+                            minuteArray[i] = Integer.parseInt(pckg.split("-")[2]);
+                            durationArray[i] = Integer.parseInt(pckg.split("-")[3]);
                             updateTimeListView();
                         }
 
@@ -681,11 +690,12 @@ public class MainActivity extends AppCompatActivity {
 
         String timeListString = numMemTimes + ",";
         for (int i = 0; i < numMemTimes; i++) {
+            dayArray[i] = dayNP[i].getValue();
             hourArray[i] = hourNP[i].getValue();
             minuteArray[i] = minuteNP[i].getValue();
             durationArray[i] = durationNP[i].getValue();
 
-            timeListString += hourArray[i] + "-" + minuteArray[i] + "-" + durationArray[i] + ",";
+            timeListString += dayArray[i] + "-" + hourArray[i] + "-" + minuteArray[i] + "-" + durationArray[i] + ",";
         }
 
         String requestURL = URL + "?action=" + SET_TIME_LIST + "&timelist=" + timeListString;
@@ -773,13 +783,6 @@ public class MainActivity extends AppCompatActivity {
                         }
 
                         getLastWater();
-                        /*updateLastWater();
-
-                        // save lastWater timestamp on device
-                        SharedPreferences preferences = getSharedPreferences("FoliumAP_Data", MODE_PRIVATE);
-                        SharedPreferences.Editor editor = preferences.edit();
-                        editor.putString("lastWaterTimestamp", lastWaterTimestamp);
-                        editor.apply();*/
                     }
                 },
                 new Response.ErrorListener() {
@@ -829,13 +832,6 @@ public class MainActivity extends AppCompatActivity {
                         }
 
                         getLastWater();
-                        /*updateLastWater();
-
-                        // save lastWater timestamp on device
-                        SharedPreferences preferences = getSharedPreferences("FoliumAP_Data", MODE_PRIVATE);
-                        SharedPreferences.Editor editor = preferences.edit();
-                        editor.putString("lastWaterTimestamp", lastWaterTimestamp);
-                        editor.apply();*/
                     }
                 },
                 new Response.ErrorListener() {
