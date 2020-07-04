@@ -6,6 +6,8 @@
 
     <color name="colorText">#000000</color>
     <color name="colorTextLog">#505050</color>
+    <color name="colorTextInactive">#ACACAC</color>
 
     <color name="colorBackground">#E3E3E3</color>
+    <color name="colorProgressBarBackground">#BF000000</color>
 </resources>

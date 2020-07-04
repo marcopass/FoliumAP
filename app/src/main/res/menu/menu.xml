@@ -7,4 +7,19 @@
         app:showAsAction="">
     </item>
 
+    <item android:id="@+id/menu_item_set_date_time"
+        android:title="> setDateTime"
+        app:showAsAction="">
+    </item>
+
+    <item android:id="@+id/menu_item_get_last_water"
+        android:title="> getLastWater"
+        app:showAsAction="">
+    </item>
+
+    <item android:id="@+id/menu_item_stop_water_now"
+        android:title="> stopWaterNow"
+        app:showAsAction="">
+    </item>
+
 </menu>
